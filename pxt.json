@@ -1,29 +1,35 @@
 {
-    "name": "SSD1306_OLED",
-    "version": "2.0.18",
-    "description": "Tinkercademy package for SSD1306 OLED controller",
+    "name": "RoboEyes OLED",
+    "description": "Animated robot eyes for BBC micro:bit with SSD1306 128x64 OLED display",
+    "version": "1.0.0",
     "license": "MIT",
-    "dependencies": {
-        "core": "*"
-    },
+    "author": "dlaelektroant-dot",
+    "homepage": "https://github.com/dlaelektroant-dot/Oled",
+    "supportUrl": "https://github.com/dlaelektroant-dot/Oled/issues",
     "files": [
         "README.md",
         "main.ts",
-        "_locales/zh/SSD1306_OLED-strings.json",
-        "_locales/pl/SSD1306_OLED-strings.json",
-        "_locales/ja/SSD1306_OLED-strings.json",
-        "_locales/zh-TW/SSD1306_OLED-strings.json"
+        "roboeyes.ts"
     ],
     "testFiles": [
         "test.ts"
     ],
     "public": true,
     "targetVersions": {
-        "target": "7.0.51",
-        "targetId": "microbit"
+        "target": "0.4.11",
+        "pxt": "7.4.17"
     },
-    "supportedTargets": [
-        "microbit"
-    ],
-    "preferredEditor": "tsprj"
+    "dependencies": {
+        "core": "*",
+        "core---spi": "github:Microsoft/pxt-common-packages/core---spi#v1.3.5",
+        "core---i2c": "github:Microsoft/pxt-common-packages/core---i2c#v1.3.5"
+    },
+    "metadata": {
+        "projectName": "RoboEyes OLED",
+        "projectDescription": "Animated robot eyes for BBC micro:bit with SSD1306 128x64 OLED I2C display",
+        "blocksColors": {
+            "RoboEyesOLED": "#4472C4"
+        },
+        "commentRatio": 0.3
+    }
 }
