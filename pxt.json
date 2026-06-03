@@ -1,35 +1,22 @@
 {
-    "name": "RoboEyes OLED",
-    "description": "Animated robot eyes for BBC micro:bit with SSD1306 128x64 OLED display",
+    "name": "pxt-roboeyes-oled",
     "version": "1.0.0",
+    "description": "RoboEyes animated eyes for BBC micro:bit with SSD1306 128x64 OLED",
     "license": "MIT",
-    "author": "dlaelektroant-dot",
-    "homepage": "https://github.com/dlaelektroant-dot/Oled",
-    "supportUrl": "https://github.com/dlaelektroant-dot/Oled/issues",
+    "dependencies": {
+        "core": "*"
+    },
     "files": [
-        "README.md",
         "main.ts",
-        "roboeyes.ts"
+        "roboeyes.ts",
+        "README.md"
     ],
     "testFiles": [
         "test.ts"
     ],
     "public": true,
     "targetVersions": {
-        "target": "0.4.11",
+        "target": "4.4.55",
         "pxt": "7.4.17"
-    },
-    "dependencies": {
-        "core": "*",
-        "core---spi": "github:Microsoft/pxt-common-packages/core---spi#v1.3.5",
-        "core---i2c": "github:Microsoft/pxt-common-packages/core---i2c#v1.3.5"
-    },
-    "metadata": {
-        "projectName": "RoboEyes OLED",
-        "projectDescription": "Animated robot eyes for BBC micro:bit with SSD1306 128x64 OLED I2C display",
-        "blocksColors": {
-            "RoboEyesOLED": "#4472C4"
-        },
-        "commentRatio": 0.3
     }
 }

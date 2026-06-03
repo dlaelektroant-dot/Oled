@@ -1,400 +1,287 @@
 /**
- * RoboEyes class implementation for micro:bit with SSD1306 OLED
+ * RoboEyes implementation for BBC micro:bit with OLED
  */
 
-namespace RoboEyesOLED {
-    // Display constants
+namespace roboeyesOLED {
     const DISPLAY_WIDTH = 128;
     const DISPLAY_HEIGHT = 64;
-    const FRAME_RATE = 100; // milliseconds per frame
+    const FRAME_RATE = 50; // milliseconds
 
-    // Mood constants
-    export const DEFAULT = 0;
-    export const TIRED = 1;
-    export const ANGRY = 2;
-    export const HAPPY = 3;
-    export const FROZEN = 4;
-    export const SCARY = 5;
-    export const CURIOUS = 6;
+    // Constants
+    const DEFAULT = 0;
+    const TIRED = 1;
+    const ANGRY = 2;
+    const HAPPY = 3;
+    const FROZEN = 4;
+    const SCARY = 5;
+    const CURIOUS = 6;
 
-    // State constants
-    export const ON = 1;
-    export const OFF = 0;
-
-    // Direction constants (predefined positions)
-    export const N = 1;   // north, top center
-    export const NE = 2;  // north-east, top right
-    export const E = 3;   // east, middle right
-    export const SE = 4;  // south-east, bottom right
-    export const S = 5;   // south, bottom center
-    export const SW = 6;  // south-west, bottom left
-    export const W = 7;   // west, middle left
-    export const NW = 8;  // north-west, top left
-
-    /**
-     * Animation step data
-     */
-    class StepData {
-        done: boolean = false;
-        ms_timing: number;
-        callback: () => void;
-        owner_seq: Sequence;
-
-        constructor(owner_seq: Sequence, ms_timing: number, callback: () => void) {
-            this.ms_timing = ms_timing;
-            this.callback = callback;
-            this.owner_seq = owner_seq;
-        }
-
-        update(ticks_ms: number): void {
-            if (this.done) return;
-            if (ticks_ms - this.owner_seq._start < this.ms_timing) return;
-            this.callback();
-            this.done = true;
-        }
-    }
-
-    /**
-     * Animation Sequence class
-     */
-    export class Sequence {
-        owner: RoboEyes;
-        name: string;
-        steps: StepData[] = [];
-        _start: number = -1;
-
-        constructor(owner: RoboEyes, name: string) {
-            this.owner = owner;
-            this.name = name;
-        }
-
-        step(ms_timing: number, callback: () => void): void {
-            const step_data = new StepData(this, ms_timing, callback);
-            this.steps.push(step_data);
-        }
-
-        start(): void {
-            this._start = input.runningTime();
-        }
-
-        reset(): void {
-            this._start = -1;
-            for (let step of this.steps) {
-                step.done = false;
-            }
-        }
-
-        get done(): boolean {
-            if (this._start < 0) return true;
-            return this.steps.every(s => s.done);
-        }
-
-        update(): void {
-            if (this._start < 0) return;
-            const current_time = input.runningTime();
-            for (let step of this.steps) {
-                step.update(current_time);
-            }
-        }
-    }
+    const ON = 1;
+    const OFF = 0;
 
     /**
      * Main RoboEyes class
      */
     export class RoboEyes {
-        // Display buffer
-        private fb: Image;
-        private last_update: number = 0;
-
-        // Eye properties
-        private eye_width_left: number = 28;
-        private eye_width_right: number = 28;
-        private eye_height_left: number = 45;
-        private eye_height_right: number = 45;
-        private eye_radius_left: number = 8;
-        private eye_radius_right: number = 8;
-        private eye_spacing: number = 10;
-        private cyclops: boolean = false;
-
-        // Eye position
-        private pupil_x_left: number = 0;
-        private pupil_y_left: number = 0;
-        private pupil_x_right: number = 0;
-        private pupil_y_right: number = 0;
-
-        // Mood and state
         private mood: number = DEFAULT;
-        private blinking: number = 0;
-        private closed: number = 0;
-
-        // Auto blinker
-        private auto_blink_enabled: number = OFF;
-        private auto_blink_interval: number = 1;
-        private auto_blink_variation: number = 4;
-        private next_blink_time: number = 0;
-
-        // Idle mode
-        private idle_enabled: number = OFF;
-        private idle_interval: number = 1;
-        private idle_variation: number = 4;
-        private next_idle_time: number = 0;
-
-        // Animation sequences
-        private sequences: Sequence[] = [];
+        private eyeLwidthCurrent: number = 36;
+        private eyeRwidthCurrent: number = 36;
+        private eyeLheightCurrent: number = 36;
+        private eyeRheightCurrent: number = 36;
+        private eyeLborderRadiusCurrent: number = 8;
+        private eyeRborderRadiusCurrent: number = 8;
+        private spaceBetweenCurrent: number = 10;
+        private cyclopsMode: boolean = false;
+        private eyesOpen: boolean = true;
+        private tired: boolean = false;
+        private angry: boolean = false;
+        private happy: boolean = false;
+        private lastUpdate: number = 0;
+        private autoblinkerEnabled: boolean = false;
+        private blinkTimer: number = 0;
+        private blinkInterval: number = 3000;
+        private blinkVariation: number = 2000;
+        private idleEnabled: boolean = false;
+        private idleTimer: number = 0;
+        private idleInterval: number = 2000;
+        private idleVariation: number = 2000;
+        private eyeLx: number = 30;
+        private eyeLy: number = 32;
+        private eyeRx: number = 92;
+        private eyeRy: number = 32;
+        private confusedState: boolean = false;
+        private laughState: boolean = false;
 
         constructor() {
-            // Initialize a virtual framebuffer (16x8 pixels for 128x64)
-            this.fb = image.create(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-            this.fb.fill(0);
-            this.initializeEyes();
-        }
-
-        private initializeEyes(): void {
-            this.pupil_x_left = this.eye_width_left / 2;
-            this.pupil_y_left = this.eye_height_left / 2;
-            this.pupil_x_right = this.eye_width_right / 2;
-            this.pupil_y_right = this.eye_height_right / 2;
+            this.lastUpdate = input.runningTime();
+            this.blinkTimer = this.lastUpdate + this.blinkInterval + randint(0, this.blinkVariation);
+            this.idleTimer = this.lastUpdate + this.idleInterval + randint(0, this.idleVariation);
         }
 
         /**
-         * Set the mood of the eyes
+         * Update animation frame
          */
-        public setMood(new_mood: number): void {
-            this.mood = new_mood;
+        public update(): void {
+            const now = input.runningTime();
+            if (now - this.lastUpdate < FRAME_RATE) return;
+            this.lastUpdate = now;
+
+            // Handle auto blink
+            if (this.autoblinkerEnabled && now >= this.blinkTimer) {
+                this.blink();
+                this.blinkTimer = now + this.blinkInterval + randint(0, this.blinkVariation);
+            }
+
+            // Handle idle mode
+            if (this.idleEnabled && now >= this.idleTimer) {
+                this.moveEyesRandomly();
+                this.idleTimer = now + this.idleInterval + randint(0, this.idleVariation);
+            }
+
+            this.draw();
+        }
+
+        /**
+         * Set the mood
+         */
+        public setMood(newMood: number): void {
+            this.mood = newMood;
+            this.tired = false;
+            this.angry = false;
+            this.happy = false;
+
+            if (newMood === TIRED) this.tired = true;
+            else if (newMood === ANGRY) this.angry = true;
+            else if (newMood === HAPPY) this.happy = true;
+            else if (newMood === SCARY) this.tired = true;
+            else if (newMood === FROZEN) {
+                // Frozen eyes - wide open
+            }
+            else if (newMood === CURIOUS) {
+                // Curious eyes
+            }
         }
 
         /**
          * Set auto blinking
          */
-        public setAutoBlinker(active: number, interval: number = 1, variation: number = 4): void {
-            this.auto_blink_enabled = active;
-            this.auto_blink_interval = interval * 1000; // Convert to milliseconds
-            this.auto_blink_variation = variation * 1000;
-            if (active) {
-                this.next_blink_time = input.runningTime() + this.auto_blink_interval + randint(0, this.auto_blink_variation);
-            }
+        public setAutoBlinking(active: number, interval: number = 3, variation: number = 2): void {
+            this.autoblinkerEnabled = active === ON;
+            this.blinkInterval = interval * 1000;
+            this.blinkVariation = variation * 1000;
         }
 
         /**
          * Set idle mode
          */
-        public setIdleMode(active: number, interval: number = 1, variation: number = 4): void {
-            this.idle_enabled = active;
-            this.idle_interval = interval * 1000; // Convert to milliseconds
-            this.idle_variation = variation * 1000;
-            if (active) {
-                this.next_idle_time = input.runningTime() + this.idle_interval + randint(0, this.idle_variation);
-            }
+        public setIdleMode(active: number, interval: number = 2, variation: number = 2): void {
+            this.idleEnabled = active === ON;
+            this.idleInterval = interval * 1000;
+            this.idleVariation = variation * 1000;
         }
 
         /**
-         * Set eye dimensions
+         * Set eye width
          */
         public setEyeWidth(left: number, right: number): void {
-            this.eye_width_left = left;
-            this.eye_width_right = right;
-        }
-
-        public setEyeHeight(left: number, right: number): void {
-            this.eye_height_left = left;
-            this.eye_height_right = right;
-        }
-
-        public setEyeRadius(left: number, right: number): void {
-            this.eye_radius_left = left;
-            this.eye_radius_right = right;
-        }
-
-        public setEyeSpacing(spacing: number): void {
-            this.eye_spacing = spacing;
+            this.eyeLwidthCurrent = left;
+            this.eyeRwidthCurrent = right;
         }
 
         /**
-         * Set cyclops mode
+         * Set eye height
          */
-        public setCyclopsMode(enabled: boolean): void {
-            this.cyclops = enabled;
+        public setEyeHeight(left: number, right: number): void {
+            this.eyeLheightCurrent = left;
+            this.eyeRheightCurrent = right;
+        }
+
+        /**
+         * Set eye radius
+         */
+        public setEyeRadius(left: number, right: number): void {
+            this.eyeLborderRadiusCurrent = left;
+            this.eyeRborderRadiusCurrent = right;
+        }
+
+        /**
+         * Set spacing between eyes
+         */
+        public setEyeSpacing(spacing: number): void {
+            this.spaceBetweenCurrent = spacing;
         }
 
         /**
          * Close eyes
          */
         public close(): void {
-            this.closed = 1;
+            this.eyesOpen = false;
         }
 
         /**
          * Open eyes
          */
         public open(): void {
-            this.closed = 0;
+            this.eyesOpen = true;
         }
 
         /**
-         * Perform wink animation
+         * Blink animation
+         */
+        public blink(): void {
+            this.eyesOpen = false;
+            basic.pause(200);
+            this.eyesOpen = true;
+        }
+
+        /**
+         * Wink animation
          */
         public wink(): void {
-            this.blinking = 1;
+            this.autoblinkerEnabled = false;
+            this.idleEnabled = false;
+            this.blink();
         }
 
         /**
-         * Update animation
+         * Set cyclops mode
          */
-        public update(): void {
-            const now = input.runningTime();
-            if (now - this.last_update < FRAME_RATE) return;
-            this.last_update = now;
-
-            // Handle auto blinking
-            if (this.auto_blink_enabled && now >= this.next_blink_time) {
-                this.blinking = 1;
-                this.next_blink_time = now + this.auto_blink_interval + randint(0, this.auto_blink_variation);
-            }
-
-            // Handle idle mode
-            if (this.idle_enabled && now >= this.next_idle_time) {
-                this.movePupilToPosition(randint(0, 8));
-                this.next_idle_time = now + this.idle_interval + randint(0, this.idle_variation);
-            }
-
-            // Update sequences
-            for (let seq of this.sequences) {
-                seq.update();
-            }
-
-            // Draw eyes
-            this.drawEyes();
-
-            // Display the frame
-            this.show();
+        public setCyclopsMode(enabled: boolean): void {
+            this.cyclopsMode = enabled;
         }
 
         /**
-         * Draw the eyes on the framebuffer
+         * Set eye position (direction)
          */
-        private drawEyes(): void {
-            this.fb.fill(0); // Clear display
+        public setPosition(position: number): void {
+            const maxX = DISPLAY_WIDTH - this.eyeLwidthCurrent - this.spaceBetweenCurrent - this.eyeRwidthCurrent;
+            const maxY = DISPLAY_HEIGHT - this.eyeLheightCurrent;
 
-            // Draw left eye
-            if (!this.cyclops) {
-                this.drawEye(
-                    30, // x position of left eye
-                    32, // y position of left eye
-                    this.eye_width_left,
-                    this.eye_height_left,
-                    this.eye_radius_left,
-                    this.pupil_x_left,
-                    this.pupil_y_left
-                );
+            switch (position) {
+                case 1: // Top
+                    this.eyeLx = maxX / 2;
+                    this.eyeLy = 0;
+                    break;
+                case 2: // TopRight
+                    this.eyeLx = maxX;
+                    this.eyeLy = 0;
+                    break;
+                case 3: // Right
+                    this.eyeLx = maxX;
+                    this.eyeLy = maxY / 2;
+                    break;
+                case 4: // BottomRight
+                    this.eyeLx = maxX;
+                    this.eyeLy = maxY;
+                    break;
+                case 5: // Bottom
+                    this.eyeLx = maxX / 2;
+                    this.eyeLy = maxY;
+                    break;
+                case 6: // BottomLeft
+                    this.eyeLx = 0;
+                    this.eyeLy = maxY;
+                    break;
+                case 7: // Left
+                    this.eyeLx = 0;
+                    this.eyeLy = maxY / 2;
+                    break;
+                case 8: // TopLeft
+                    this.eyeLx = 0;
+                    this.eyeLy = 0;
+                    break;
+                default: // Center
+                    this.eyeLx = maxX / 2;
+                    this.eyeLy = maxY / 2;
             }
-
-            // Draw right eye (or cyclops center)
-            const right_x = this.cyclops ? 64 : 98; // 128/2 for cyclops
-            this.drawEye(
-                right_x,
-                32,
-                this.cyclops ? this.eye_width_left : this.eye_width_right,
-                this.cyclops ? this.eye_height_left : this.eye_height_right,
-                this.cyclops ? this.eye_radius_left : this.eye_radius_right,
-                this.cyclops ? this.pupil_x_left : this.pupil_x_right,
-                this.cyclops ? this.pupil_y_left : this.pupil_y_right
-            );
+            this.eyeRx = this.eyeLx + this.eyeLwidthCurrent + this.spaceBetweenCurrent;
+            this.eyeRy = this.eyeLy;
         }
 
         /**
-         * Draw a single eye
+         * Confused animation
          */
-        private drawEye(center_x: number, center_y: number, width: number, height: number, radius: number, pupil_x: number, pupil_y: number): void {
-            const x_start = center_x - width / 2;
-            const y_start = center_y - height / 2;
-            const x_end = x_start + width;
-            const y_end = y_start + height;
-
-            // Draw eye outline (rectangle or rounded)
-            for (let x = x_start; x < x_end; x++) {
-                for (let y = y_start; y < y_end; y++) {
-                    if (this.closed) {
-                        if (y === y_start || y === y_end - 1) {
-                            this.fb.setPixel(x, y, 1);
-                        }
-                    } else {
-                        // Draw white background
-                        this.fb.setPixel(x, y, 1);
-                    }
-                }
-            }
-
-            // Draw pupil (if eyes are open)
-            if (!this.closed) {
-                const pupil_size = 4;
-                const pupil_center_x = x_start + pupil_x;
-                const pupil_center_y = y_start + pupil_y;
-
-                for (let x = pupil_center_x - pupil_size / 2; x < pupil_center_x + pupil_size / 2; x++) {
-                    for (let y = pupil_center_y - pupil_size / 2; y < pupil_center_y + pupil_size / 2; y++) {
-                        if (x >= 0 && x < DISPLAY_WIDTH && y >= 0 && y < DISPLAY_HEIGHT) {
-                            this.fb.setPixel(x, y, 0); // Black pupil
-                        }
-                    }
-                }
-            }
+        public confuse(): void {
+            this.confusedState = true;
+            basic.pause(500);
+            this.confusedState = false;
         }
 
         /**
-         * Move pupil to predefined position
+         * Laugh animation
          */
-        private movePupilToPosition(direction: number): void {
-            const max_offset = 10;
-            let offset_x = 0;
-            let offset_y = 0;
-
-            switch (direction) {
-                case N:
-                    offset_y = -max_offset;
-                    break;
-                case NE:
-                    offset_x = max_offset;
-                    offset_y = -max_offset;
-                    break;
-                case E:
-                    offset_x = max_offset;
-                    break;
-                case SE:
-                    offset_x = max_offset;
-                    offset_y = max_offset;
-                    break;
-                case S:
-                    offset_y = max_offset;
-                    break;
-                case SW:
-                    offset_x = -max_offset;
-                    offset_y = max_offset;
-                    break;
-                case W:
-                    offset_x = -max_offset;
-                    break;
-                case NW:
-                    offset_x = -max_offset;
-                    offset_y = -max_offset;
-                    break;
-                default: // CENTER
-                    offset_x = 0;
-                    offset_y = 0;
-            }
-
-            this.pupil_x_left = this.eye_width_left / 2 + offset_x;
-            this.pupil_y_left = this.eye_height_left / 2 + offset_y;
-            this.pupil_x_right = this.eye_width_right / 2 + offset_x;
-            this.pupil_y_right = this.eye_height_right / 2 + offset_y;
+        public laugh(): void {
+            this.laughState = true;
+            basic.pause(500);
+            this.laughState = false;
         }
 
         /**
-         * Display the framebuffer
+         * Move eyes randomly
          */
-        private show(): void {
-            // In MakeCode, we would send this to the OLED display
-            // For now, show on LED matrix (scaled down version)
-            led.plotImage(this.fb);
+        private moveEyesRandomly(): void {
+            this.setPosition(randint(0, 8));
+        }
+
+        /**
+         * Draw the eyes
+         */
+        private draw(): void {
+            // This would normally draw to OLED
+            // For micro:bit, we can use the LED matrix as a visual indicator
+            let iconState = IconNames.Happy;
+            
+            if (this.tired) iconState = IconNames.Asleep;
+            else if (this.angry) iconState = IconNames.Angry;
+            else if (this.happy) iconState = IconNames.Happy;
+            else if (this.mood === FROZEN) iconState = IconNames.Surprised;
+            else if (this.mood === SCARY) iconState = IconNames.Sad;
+
+            if (this.eyesOpen) {
+                basic.showIcon(iconState);
+            } else {
+                basic.showIcon(IconNames.Asleep);
+            }
         }
     }
 }

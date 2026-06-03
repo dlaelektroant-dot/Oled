@@ -1,195 +1,258 @@
 /**
- * RoboEyes OLED blocks
+ * Use this file to define custom functions and blocks.
+ * Read more at https://makecode.microbit.org/blocks/custom
  */
-//% weight=100 color=#4472C4 icon="\uf06e" block="RoboEyes"
-namespace RoboEyesOLED {
+
+/**
+ * RoboEyes blocks for BBC micro:bit with OLED display
+ */
+//% weight=100 color=#0078D4 icon="\uf06e" block="RoboEyes OLED"
+namespace roboeyesOLED {
     export enum Mood {
-        //% block="DEFAULT"
-        DEFAULT = 0,
-        //% block="HAPPY"
-        HAPPY = 1,
-        //% block="ANGRY"
-        ANGRY = 2,
-        //% block="TIRED"
-        TIRED = 3,
-        //% block="SCARY"
-        SCARY = 4,
-        //% block="CURIOUS"
-        CURIOUS = 5,
-        //% block="FROZEN"
-        FROZEN = 6
+        //% block="Default"
+        Default = 0,
+        //% block="Happy"
+        Happy = 3,
+        //% block="Angry"
+        Angry = 2,
+        //% block="Tired"
+        Tired = 1,
+        //% block="Scary"
+        Scary = 5,
+        //% block="Curious"
+        Curious = 6,
+        //% block="Frozen"
+        Frozen = 4
     }
 
-    export enum Direction {
-        //% block="CENTER"
-        CENTER = 0,
-        //% block="NORTH"
-        NORTH = 1,
-        //% block="NORTHEAST"
-        NORTHEAST = 2,
-        //% block="EAST"
-        EAST = 3,
-        //% block="SOUTHEAST"
-        SOUTHEAST = 4,
-        //% block="SOUTH"
-        SOUTH = 5,
-        //% block="SOUTHWEST"
-        SOUTHWEST = 6,
-        //% block="WEST"
-        WEST = 7,
-        //% block="NORTHWEST"
-        NORTHWEST = 8
+    export enum Position {
+        //% block="Center"
+        Center = 0,
+        //% block="Top"
+        Top = 1,
+        //% block="TopRight"
+        TopRight = 2,
+        //% block="Right"
+        Right = 3,
+        //% block="BottomRight"
+        BottomRight = 4,
+        //% block="Bottom"
+        Bottom = 5,
+        //% block="BottomLeft"
+        BottomLeft = 6,
+        //% block="Left"
+        Left = 7,
+        //% block="TopLeft"
+        TopLeft = 8
     }
 
-    let roboEyesInstance: RoboEyes | null = null;
+    let roboEyesInstance: RoboEyes = null;
 
     /**
-     * Create and initialize RoboEyes
+     * Initialize RoboEyes
      */
-    //% block="create RoboEyes"
-    //% blockId=roboeyes_create
-    //% weight=90
-    export function createRoboEyes(): RoboEyes {
+    //% block="initialize RoboEyes"
+    //% blockId=roboeyes_init
+    //% weight=100
+    export function initialize(): void {
         if (!roboEyesInstance) {
             roboEyesInstance = new RoboEyes();
         }
-        return roboEyesInstance;
     }
 
     /**
-     * Set the mood of the eyes
+     * Update RoboEyes display
+     */
+    //% block="update RoboEyes"
+    //% blockId=roboeyes_update
+    //% weight=99
+    export function update(): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.update();
+        }
+    }
+
+    /**
+     * Set mood of eyes
      */
     //% block="set RoboEyes mood to %mood"
     //% blockId=roboeyes_set_mood
-    //% weight=80
-    export function setMood(roboeyes: RoboEyes, mood: Mood): void {
-        roboeyes.setMood(mood);
+    //% mood.defl=Mood.Default
+    //% weight=90
+    export function setMood(mood: Mood): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setMood(mood);
+        }
     }
 
     /**
-     * Set auto blinking
+     * Enable auto blinking
      */
-    //% block="set RoboEyes auto blinking %active interval %interval variation %variation"
+    //% block="set auto blinking %enabled interval %interval seconds variation %variation seconds"
     //% blockId=roboeyes_auto_blink
-    //% weight=75
-    //% active.shadow=toggleOnOff
+    //% enabled.shadow=toggleOnOff
     //% interval.defl=3
     //% variation.defl=2
-    export function setAutoBlinking(roboeyes: RoboEyes, active: boolean, interval: number = 3, variation: number = 2): void {
-        roboeyes.setAutoBlinker(active ? 1 : 0, interval, variation);
+    //% weight=85
+    export function setAutoBlinking(enabled: boolean, interval: number = 3, variation: number = 2): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setAutoBlinking(enabled ? 1 : 0, interval, variation);
+        }
     }
 
     /**
-     * Set idle mode
+     * Enable idle mode (random eye movements)
      */
-    //% block="set RoboEyes idle mode %active interval %interval variation %variation"
+    //% block="set idle mode %enabled interval %interval seconds variation %variation seconds"
     //% blockId=roboeyes_idle_mode
-    //% weight=74
-    //% active.shadow=toggleOnOff
+    //% enabled.shadow=toggleOnOff
     //% interval.defl=2
     //% variation.defl=2
-    export function setIdleMode(roboeyes: RoboEyes, active: boolean, interval: number = 2, variation: number = 2): void {
-        roboeyes.setIdleMode(active ? 1 : 0, interval, variation);
+    //% weight=84
+    export function setIdleMode(enabled: boolean, interval: number = 2, variation: number = 2): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setIdleMode(enabled ? 1 : 0, interval, variation);
+        }
     }
 
     /**
-     * Set eye dimensions
+     * Set eye width
      */
-    //% block="set RoboEyes eye width left %left right %right"
+    //% block="set eye width left %left right %right"
     //% blockId=roboeyes_eye_width
-    //% weight=70
-    export function setEyeWidth(roboeyes: RoboEyes, left: number, right: number): void {
-        roboeyes.setEyeWidth(left, right);
+    //% left.defl=36
+    //% right.defl=36
+    //% weight=80
+    export function setEyeWidth(left: number, right: number): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setEyeWidth(left, right);
+        }
     }
 
     /**
      * Set eye height
      */
-    //% block="set RoboEyes eye height left %left right %right"
+    //% block="set eye height left %left right %right"
     //% blockId=roboeyes_eye_height
-    //% weight=69
-    export function setEyeHeight(roboeyes: RoboEyes, left: number, right: number): void {
-        roboeyes.setEyeHeight(left, right);
+    //% left.defl=36
+    //% right.defl=36
+    //% weight=79
+    export function setEyeHeight(left: number, right: number): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setEyeHeight(left, right);
+        }
     }
 
     /**
-     * Set eye radius (corner roundness)
+     * Set eye radius (roundness)
      */
-    //% block="set RoboEyes eye radius left %left right %right"
+    //% block="set eye radius left %left right %right"
     //% blockId=roboeyes_eye_radius
-    //% weight=68
-    export function setEyeRadius(roboeyes: RoboEyes, left: number, right: number): void {
-        roboeyes.setEyeRadius(left, right);
+    //% left.defl=8
+    //% right.defl=8
+    //% weight=78
+    export function setEyeRadius(left: number, right: number): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setEyeRadius(left, right);
+        }
     }
 
     /**
-     * Set eye spacing
+     * Set space between eyes
      */
-    //% block="set RoboEyes eye spacing %spacing"
-    //% blockId=roboeyes_eye_spacing
-    //% weight=67
-    export function setEyeSpacing(roboeyes: RoboEyes, spacing: number): void {
-        roboeyes.setEyeSpacing(spacing);
-    }
-
-    /**
-     * Set cyclops mode
-     */
-    //% block="set RoboEyes cyclops mode %enabled"
-    //% blockId=roboeyes_cyclops
-    //% weight=66
-    //% enabled.shadow=toggleOnOff
-    export function setCyclopsMode(roboeyes: RoboEyes, enabled: boolean): void {
-        roboeyes.setCyclopsMode(enabled);
+    //% block="set eye spacing %spacing"
+    //% blockId=roboeyes_spacing
+    //% spacing.defl=10
+    //% weight=77
+    export function setEyeSpacing(spacing: number): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setEyeSpacing(spacing);
+        }
     }
 
     /**
      * Close eyes
      */
-    //% block="close RoboEyes eyes"
+    //% block="close eyes"
     //% blockId=roboeyes_close
-    //% weight=60
-    export function closeEyes(roboeyes: RoboEyes): void {
-        roboeyes.close();
+    //% weight=75
+    export function closeEyes(): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.close();
+        }
     }
 
     /**
      * Open eyes
      */
-    //% block="open RoboEyes eyes"
+    //% block="open eyes"
     //% blockId=roboeyes_open
-    //% weight=59
-    export function openEyes(roboeyes: RoboEyes): void {
-        roboeyes.open();
+    //% weight=74
+    export function openEyes(): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.open();
+        }
     }
 
     /**
      * Wink animation
      */
-    //% block="RoboEyes wink"
+    //% block="wink"
     //% blockId=roboeyes_wink
-    //% weight=58
-    export function wink(roboeyes: RoboEyes): void {
-        roboeyes.wink();
+    //% weight=73
+    export function wink(): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.wink();
+        }
     }
 
     /**
-     * Update display
+     * Move eyes to position
      */
-    //% block="update RoboEyes"
-    //% blockId=roboeyes_update
-    //% weight=100
-    export function update(roboeyes: RoboEyes): void {
-        roboeyes.update();
+    //% block="look %position"
+    //% blockId=roboeyes_look
+    //% position.defl=Position.Center
+    //% weight=72
+    export function lookAt(position: Position): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setPosition(position);
+        }
     }
 
     /**
-     * Create a new animation sequence
+     * Enable cyclops mode
      */
-    //% block="create animation sequence %name"
-    //% blockId=roboeyes_create_sequence
-    //% weight=50
-    export function createSequence(roboeyes: RoboEyes, name: string): Sequence {
-        return new Sequence(roboeyes, name);
+    //% block="set cyclops mode %enabled"
+    //% blockId=roboeyes_cyclops
+    //% enabled.shadow=toggleOnOff
+    //% weight=70
+    export function setCyclopsMode(enabled: boolean): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.setCyclopsMode(enabled);
+        }
+    }
+
+    /**
+     * Make eyes confused (shake animation)
+     */
+    //% block="confuse eyes"
+    //% blockId=roboeyes_confuse
+    //% weight=60
+    export function confuse(): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.confuse();
+        }
+    }
+
+    /**
+     * Make eyes laugh (shake animation)
+     */
+    //% block="laugh"
+    //% blockId=roboeyes_laugh
+    //% weight=59
+    export function laugh(): void {
+        if (roboEyesInstance) {
+            roboEyesInstance.laugh();
+        }
     }
 }

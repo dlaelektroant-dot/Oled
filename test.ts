@@ -1,9 +1,9 @@
-// Test blocks
-let roboEyes = RoboEyesOLED.createRoboEyes()
-roboEyes.setAutoBlinking(true, 3, 2)
-roboEyes.setIdleMode(true, 2, 2)
-roboEyes.setMood(RoboEyesOLED.Mood.DEFAULT)
+// Test example
+roboeyesOLED.initialize();
+roboeyesOLED.setAutoBlinking(true, 3, 2);
+roboeyesOLED.setIdleMode(true, 2, 2);
+roboeyesOLED.setMood(roboeyesOLED.Mood.Happy);
 
 basic.forever(function () {
-    roboEyes.update()
-})
+    roboeyesOLED.update();
+});
